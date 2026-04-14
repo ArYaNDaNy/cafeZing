@@ -1,0 +1,25 @@
+{
+  "name": "cafezing",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "^55.0.12",
+    "expo-status-bar": "~55.0.5",
+    "lucide-react": "^1.7.0",
+    "lucide-react-native": "^1.7.0",
+    "motion": "^12.38.0",
+    "react": "19.2.0",
+    "react-native": "0.83.4",
+    "react-native-svg": "15.15.3"
+  },
+  "private": true,
+  "devDependencies": {
+    "babel-preset-expo": "^55.0.16"
+  }
+}
