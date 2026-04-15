@@ -1,11 +1,43 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { MapPin, Zap, ChevronRight } from 'lucide-react-native';
 import { styles } from '../styles/theme';
 import { FadeInView } from '../components/Animations';
 import { FoodCard } from '../components/UIComponents';
 
+const BACKEND_URL = 'http://192.168.29.121:8000'; 
+
 export default function MenuScreen() {
+  const [menuItems, setMenuItems] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    fetchMenu();
+  }, []);
+
+  const fetchMenu = async() => {
+    try{
+      const response = await fetch(`${BACKEND_URL}/api/menu/`)
+
+      if(!response.ok)
+      {
+        throw new Error('Failed to fetch menu')
+      }
+
+      const data = await response.json()
+      setMenuItems(data)
+    }
+    catch (error) 
+    {
+      console.error("Menu Fetch Error:", error);
+      Alert.alert("Error", "Could not load the canteen menu.");
+    } 
+    finally 
+    {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <FadeInView slideY={20} style={styles.screenWrapper}>
       <View style={styles.priorityBanner}>
@@ -28,9 +60,21 @@ export default function MenuScreen() {
         </View>
 
         <View style={styles.foodGrid}>
-          <FoodCard name="Classic Vada Pav" price="25" oldPrice="30" desc="Spicy potato fritter in a soft bun with dry garlic chutney." img="https://picsum.photos/seed/vadapav/400/300" fast />
-          <FoodCard name="Classic Cold Coffee" price="45" oldPrice="50" desc="Blended espresso with cold milk and a thick froth layer." img="https://picsum.photos/seed/coffee/400/300" />
-          <FoodCard name="Crispy Samosa" price="20" oldPrice="25" desc="Two pieces of flaky pastry stuffed with spiced peas and potato." img="https://picsum.photos/seed/samosa/400/300" fast />
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#39ff14" style={{ marginTop: 50 }} />
+          ) : (
+            menuItems.map((item) => (
+              <FoodCard 
+                key={item.item_id}
+                name={item.name}
+                price={item.price.toString()} 
+                oldPrice={item.old_price ? item.old_price.toString() : null}
+                desc={item.description}
+                img={item.image_url}    // Mapping backend key to your frontend prop
+                fast={item.is_fast_selling} // Mapping backend key to your frontend prop
+              />
+            ))
+          )}
         </View>
       </ScrollView>
 

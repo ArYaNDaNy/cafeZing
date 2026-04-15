@@ -1,41 +1,190 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-import { Zap, CheckCircle2 } from 'lucide-react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { Zap, CheckCircle2, AlertCircle } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/theme';
 import { FadeInView, RadarRing, BouncingDot } from '../components/Animations';
 
-export default function ScanScreen() {
+const BACKEND_URL = 'http://192.168.29.121:8000'; 
+const CANTEEN_BEACON_ID = 'canteen_main_gate';
+
+export default function ScanScreen({ navigation }) { // Assuming you use React Navigation
+  const [scanStatus, setScanStatus] = useState('scanning'); // 'scanning', 'success', 'error'
+  const [tokenId, setTokenId] = useState(null);
+  
+  const heartbeatInterval = useRef(null);
+
+  // 1. WAKE UP LOGIC
+  useEffect(() => {
+    checkSavedToken();
+    return () => stopHeartbeat();
+  }, []);
+
+  // 2. CHECK STORAGE FIRST
+  const checkSavedToken = async () => {
+    try {
+      const savedToken = await AsyncStorage.getItem('@ghost_token');
+      
+      if (savedToken) {
+        // We found an old token! Let's ask the server if it's still valid
+        const response = await fetch(`${BACKEND_URL}/api/heartbeat/`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-token-id': savedToken 
+          },
+        });
+
+        if (response.ok) {
+          setTokenId(savedToken);
+          setScanStatus('success');
+          startHeartbeat(savedToken);
+          return; 
+        } else {
+          // Server rejected it (token died in Redis). Clear it and scan.
+          await AsyncStorage.removeItem('@ghost_token');
+        }
+      }
+      
+      // If no token was found, or the old one was dead, do a fresh scan
+      performScan();
+
+    } catch (error) {
+      console.error("Storage error:", error);
+      performScan();
+    }
+  };
+
+  // 3. THE API CALL LOGIC (Updated to save token)
+  const performScan = async () => {
+    setScanStatus('scanning');
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Radar animation delay
+
+      const response = await fetch(`${BACKEND_URL}/api/scan/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ beacon_id: CANTEEN_BEACON_ID }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // SAVE TO STATE AND HARD DRIVE
+        setTokenId(data.tokenId);
+        await AsyncStorage.setItem('@ghost_token', data.tokenId); //SAVEEE
+        
+        setScanStatus('success');
+        startHeartbeat(data.tokenId);
+      } else {
+        setScanStatus('error');
+      }
+    } catch (error) {
+      console.error("Network Error:", error);
+      setScanStatus('error');
+    }
+  };
+
+  // 4. THE HEARTBEAT LOGIC
+  const startHeartbeat = (activeToken) => {
+    stopHeartbeat(); 
+
+    heartbeatInterval.current = setInterval(async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/heartbeat/`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-token-id': activeToken 
+          },
+        });
+
+        if (response.status === 401) {
+          // TOKEN DIED! 
+          stopHeartbeat();
+          setScanStatus('error');
+          await AsyncStorage.removeItem('@ghost_token'); // <-- WIPE FROM HARD DRIVE
+          Alert.alert("Session Expired", "You stepped away. Please rescan.");
+        }
+      } catch (error) {
+        console.log("Heartbeat ping failed, will retry next cycle.");
+      }
+    }, 120000); 
+  };
+
+  const stopHeartbeat = () => {
+    if (heartbeatInterval.current) clearInterval(heartbeatInterval.current);
+  };
+
+  // --- RENDER HELPERS ---
+
+  const renderScanningUI = () => (
+    <View style={styles.radarCard}>
+      <View style={styles.radarAnimationContainer}>
+        <RadarRing delay={0} borderColor="rgba(57, 255, 20, 0.3)" />
+        <RadarRing delay={600} borderColor="rgba(57, 255, 20, 0.2)" />
+        <RadarRing delay={1200} borderColor="rgba(57, 255, 20, 0.1)" />
+        <View style={styles.radarCenter}>
+          <Zap size={40} color="#000" fill="#000" />
+        </View>
+      </View>
+      <View style={styles.scanningTextWrapper}>
+        <Text style={styles.scanningText}>Scanning for{'\n'}Canteen Beacon...</Text>
+        <View style={styles.scanningDots}>
+          <BouncingDot delay={0} />
+          <BouncingDot delay={150} />
+          <BouncingDot delay={300} />
+        </View>
+      </View>
+      <View style={[styles.corner, styles.topLeft]} />
+      <View style={[styles.corner, styles.topRight]} />
+      <View style={[styles.corner, styles.bottomLeft]} />
+      <View style={[styles.corner, styles.bottomRight]} />
+    </View>
+  );
+
   return (
     <FadeInView slideY={20} style={styles.scanScreen}>
       <Text style={styles.heroTitle}>Grab a{'\n'}Bite.</Text>
 
       <View style={styles.radarWrapper}>
         <View style={styles.radarGlow} />
-        <View style={styles.radarCard}>
-          <View style={styles.radarAnimationContainer}>
-            <RadarRing delay={0} borderColor="rgba(57, 255, 20, 0.3)" />
-            <RadarRing delay={600} borderColor="rgba(57, 255, 20, 0.2)" />
-            <RadarRing delay={1200} borderColor="rgba(57, 255, 20, 0.1)" />
+        
+        {/* CONDITIONAL RENDERING BASED ON STATE */}
+        
+        {scanStatus === 'scanning' && renderScanningUI()}
+
+        {scanStatus === 'success' && (
+          <View style={[styles.radarCard, { justifyContent: 'center', alignItems: 'center' }]}>
+            <CheckCircle2 size={60} color="#39FF14" style={{ marginBottom: 20 }} />
+            <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>Connected!</Text>
+            <Text style={{ color: '#888', marginTop: 10 }}>Ghost Token: {tokenId}</Text>
             
-            <View style={styles.radarCenter}>
-              <Zap size={40} color="#000" fill="#000" />
-            </View>
+            <TouchableOpacity 
+              style={{ backgroundColor: '#39FF14', padding: 15, borderRadius: 30, marginTop: 30, width: '80%', alignItems: 'center' }}
+              onPress={() => console.log("Navigate to Menu Screen here!")}
+            >
+              <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>View Menu</Text>
+            </TouchableOpacity>
           </View>
+        )}
 
-          <View style={styles.scanningTextWrapper}>
-            <Text style={styles.scanningText}>Scanning for{'\n'}Canteen Beacon...</Text>
-            <View style={styles.scanningDots}>
-              <BouncingDot delay={0} />
-              <BouncingDot delay={150} />
-              <BouncingDot delay={300} />
-            </View>
+        {scanStatus === 'error' && (
+          <View style={[styles.radarCard, { justifyContent: 'center', alignItems: 'center' }]}>
+            <AlertCircle size={60} color="#FF4747" style={{ marginBottom: 20 }} />
+            <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>Beacon Not Found</Text>
+            <Text style={{ color: '#888', marginTop: 10, textAlign: 'center' }}>Ensure you are at the canteen entrance.</Text>
+            
+            <TouchableOpacity 
+              style={{ backgroundColor: '#FF4747', padding: 15, borderRadius: 30, marginTop: 30, width: '80%', alignItems: 'center' }}
+              onPress={performScan}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Tap to Retry</Text>
+            </TouchableOpacity>
           </View>
+        )}
 
-          <View style={[styles.corner, styles.topLeft]} />
-          <View style={[styles.corner, styles.topRight]} />
-          <View style={[styles.corner, styles.bottomLeft]} />
-          <View style={[styles.corner, styles.bottomRight]} />
-        </View>
       </View>
 
       <View style={styles.offlineNotice}>
