@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+class ScanRequest(BaseModel):
+    beacon_id: str
+
 class ScanResponse(BaseModel):
     status: str
     message: str

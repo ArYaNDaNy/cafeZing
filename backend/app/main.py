@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api import scan,heartbeat
 
 app = FastAPI(title="Canteen Live API", version="1.0.0")
 
@@ -12,7 +13,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# A simple health check route
+app.include_router(scan.router)
+app.include_router(heartbeat.router)
+
+
 @app.get("/")
 async def root():
-    return {"message": "Canteen Live Backend is running on FastAPI ⚡️"}
+    return {"message": "Canteen Live Backend onlineee"}
