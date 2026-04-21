@@ -6,7 +6,7 @@ class ScanRequest(BaseModel):
 class ScanResponse(BaseModel):
     status: str
     message: str
-    tokenId: str
+    token_id: str
     
     class Config:
         json_schema_extra = {

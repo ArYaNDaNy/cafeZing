@@ -1,6 +1,10 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
+# Added this so the API can receive the image!
+class OCRRequest(BaseModel):
+    image_base64: str = Field(..., description="Base64 string of the uploaded menu image")
+
 class ExtractedMenuItem(BaseModel):
     name: str
     price: float
@@ -21,8 +25,10 @@ class OCRResponse(BaseModel):
                     {
                         "name": "Masala Dosa",
                         "price": 65.0,
+                        "ai_recommended_price": 60.0,
                         "category": "Breakfast",
-                        "confidence_score": 0.98
+                        "confidence_score": 0.98,
+                        "image_url": None
                     }
                 ]
             }
