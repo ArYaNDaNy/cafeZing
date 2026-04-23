@@ -19,7 +19,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.appContainer} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.appContainer} edges={['top']}>
         <View style={styles.appHeader}>
           <View style={styles.headerLeft}>
             <TouchableOpacity>

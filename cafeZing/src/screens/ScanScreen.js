@@ -72,11 +72,11 @@ export default function ScanScreen({ navigation }) { // Assuming you use React N
         const data = await response.json();
         
         // SAVE TO STATE AND HARD DRIVE
-        setTokenId(data.tokenId);
-        await AsyncStorage.setItem('@ghost_token', data.tokenId); //SAVEEE
+        setTokenId(data.token_id);
+        await AsyncStorage.setItem('@ghost_token', data.token_id); //SAVEEE
         
         setScanStatus('success');
-        startHeartbeat(data.tokenId);
+        startHeartbeat(data.token_id);
       } else {
         setScanStatus('error');
       }

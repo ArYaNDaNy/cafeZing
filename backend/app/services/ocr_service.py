@@ -5,6 +5,8 @@ import cv2
 import ollama
 import pytesseract
 
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
 def extract_and_save_menu(image_base64: str):
     # 1. CLEAN THE BASE64 STRING
     if "," in image_base64:

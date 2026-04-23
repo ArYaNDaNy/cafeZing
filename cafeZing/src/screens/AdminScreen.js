@@ -5,7 +5,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { FadeInView } from '../components/Animations'; 
 
-const API_URL = 'http://192.168.1.3:8000/api/menu/scan';
+const API_URL = 'http://192.168.29.121:8000/api/menu/scan';
 
 export default function AdminScreen() {
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();

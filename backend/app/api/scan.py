@@ -18,7 +18,7 @@ async def handle_beacon_scan(request: ScanRequest):
         return ScanResponse(
             status="success",
             message="Welcome to CafeZing! You are now in the ghost queue.",
-            tokenId=token_id,
+            token_id=token_id,
             expires_in_seconds=600
         )
     except Exception as e:
