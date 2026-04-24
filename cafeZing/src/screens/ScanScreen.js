@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/theme';
 import { FadeInView, RadarRing, BouncingDot } from '../components/Animations';
 
-const BACKEND_URL = 'http://192.168.29.121:8000'; 
+const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL; 
 const CANTEEN_BEACON_ID = 'canteen_main_gate';
 
 export default function ScanScreen({ navigation }) { // Assuming you use React Navigation

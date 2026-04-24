@@ -6,8 +6,8 @@ class MenuItem(BaseModel):
     name: str
     price: float
     old_price: Optional[float] = None
-    description: str
-    image_url: str
+    description: Optional[str] = None
+    image_url: Optional[str] = None
     is_fast_selling: bool = False
     category: str
 

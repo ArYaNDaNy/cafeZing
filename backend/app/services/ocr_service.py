@@ -2,11 +2,12 @@ import os
 import json
 import base64
 import google.generativeai as genai
+# import pytesseract
 
 # Load the API key from your secure .env file
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 def extract_and_save_menu(image_base64: str):
     # 1. Clean the base64 string

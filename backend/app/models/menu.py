@@ -2,6 +2,9 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import Optional
 from app.db import Base
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import func
+from datetime import datetime
 
 class DBMenuItem(Base):
     __tablename__ = "menu_items"
@@ -14,3 +17,19 @@ class DBMenuItem(Base):
     image_url: Mapped[str]
     is_fast_selling: Mapped[bool] = mapped_column(default=False)
     category: Mapped[str]
+
+class DBOrder(Base):
+    __tablename__ = "orders"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+
+    order_id: Mapped[str] = mapped_column(unique=True, index=True) 
+    ghost_token: Mapped[str] = mapped_column(index=True)
+    daily_token_number: Mapped[int] = mapped_column()
+
+    status: Mapped[str] = mapped_column(default="RECEIVED") 
+    total_amount: Mapped[float] = mapped_column()
+
+    items: Mapped[list] = mapped_column(JSONB)
+
+    created_at: Mapped[datetime] = mapped_column(default=func.now())
