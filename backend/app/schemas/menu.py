@@ -6,10 +6,17 @@ class MenuItem(BaseModel):
     name: str
     price: float
     old_price: Optional[float] = None
-    description: str
-    image_url: str
+    
+    # Made these Optional because OCR won't immediately have descriptions or images!
+    description: Optional[str] = None 
+    image_url: Optional[str] = None
+    
     is_fast_selling: bool = False
     category: str
+    
+    # --- ADDED THESE TO MATCH YOUR DATABASE EXACTLY ---
+    confidence_score: Optional[float] = None
+    is_available: bool = True
 
     class Config:
         json_schema_extra = {
@@ -17,9 +24,12 @@ class MenuItem(BaseModel):
                 "item_id": "item_001",
                 "name": "Classic Vada Pav",
                 "price": 25.0,
+                "old_price": 30.0,
                 "description": "Spicy potato fritter in a soft bun.",
                 "image_url": "https://picsum.photos/seed/vadapav/400/300",
                 "is_fast_selling": True,
-                "category": "Snacks"
+                "category": "Snacks",
+                "confidence_score": 0.98,
+                "is_available": True
             }
         }

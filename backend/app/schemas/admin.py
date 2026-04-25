@@ -1,13 +1,18 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-# Added this so the API can receive the image!
+# ==========================================
+# PHASE 1: SCANNING SCHEMAS
+# (Used by @router.post("/scan"))
+# ==========================================
+
 class OCRRequest(BaseModel):
-    image_base64: str = Field(..., description="Base64 string of the uploaded menu image")
+    images_base64: List[str] = Field(..., description="Array of Base64 strings from the uploaded menu pages")
 
 class ExtractedMenuItem(BaseModel):
     name: str
     price: float
+    # We keep this here so the React Native UI can display the AI suggestion!
     ai_recommended_price: float = Field(..., description="AI's smart suggestion based on Mumbai college rates")
     category: str
     confidence_score: float
@@ -33,3 +38,19 @@ class OCRResponse(BaseModel):
                 ]
             }
         }
+
+
+# ==========================================
+# PHASE 2: APPROVAL SCHEMAS
+# (Used by @router.post("/approve/batch"))
+# ==========================================
+
+class ApprovedMenuItem(BaseModel):
+    name: str
+    price: float = Field(..., description="The original scanned price (Mapped to old_price in DB)")
+    final_price: float = Field(..., description="The chosen price by Admin (Mapped to price in DB)")
+    category: str
+    confidence_score: float = Field(0.95)
+    image_url: Optional[str] = None
+    description: Optional[str] = None
+    # Notice: ai_recommended_price is completely gone here!
