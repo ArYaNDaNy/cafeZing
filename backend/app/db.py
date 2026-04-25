@@ -20,7 +20,6 @@ engine = create_async_engine(
     }
 )
 
-# This is the "Session Factory" that creates a new DB session for every request
 async_session = async_sessionmaker(
     bind=engine, 
     expire_on_commit=False, 
@@ -30,14 +29,13 @@ async_session = async_sessionmaker(
 class Base(DeclarativeBase):
     pass
 
-# Connection for your Ghost Tokens and Active Queue
+
 redis_client = redis.Redis(
     host="localhost", 
     port=6379, 
     decode_responses=True
 )
 
-# This helper function handles opening/closing the DB session automatically
 async def get_db():
     async with async_session() as session:
         try:

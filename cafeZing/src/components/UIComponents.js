@@ -49,7 +49,7 @@ export function InventoryRow({ name, price, rec, cat, approved }) {
   );
 }
 
-export function FoodCard({ name, price, oldPrice, desc, img, fast }) {
+export function FoodCard({ name, price, desc, img, fast, onAdd }) {
   return (
     <View style={styles.foodCard}>
       <View style={styles.foodImgContainer}>
@@ -61,20 +61,20 @@ export function FoodCard({ name, price, oldPrice, desc, img, fast }) {
             </View>
           </View>
         )}
-        <Image source={{ uri: img }} style={styles.foodImg} />
+        <Image source={{ uri: img }} style={styles.foodImg} resizeMode="cover" />
       </View>
+      
       <View style={styles.foodInfo}>
         <View style={styles.foodHeader}>
-          <Text style={styles.foodName}>{name}</Text>
-          <View style={styles.foodPricing}>
-            <Text style={styles.foodPrice}>₹{price}</Text>
-            <Text style={styles.foodOldPrice}>₹{oldPrice}</Text>
-          </View>
+          <Text style={styles.foodName} numberOfLines={1}>{name}</Text>
+          <Text style={styles.foodPrice}>₹{price}</Text>
         </View>
-        <Text style={styles.foodDesc}>{desc}</Text>
-        <TouchableOpacity style={styles.addToTrayBtn}>
+        
+        <Text style={styles.foodDesc} numberOfLines={2}>{desc}</Text>
+        
+        <TouchableOpacity style={styles.addToTrayBtn} onPress={onAdd}>
           <Text style={styles.addToTrayText}>ADD TO TRAY</Text>
-          <Plus size={20} color="#000" />
+          <Plus size={18} color="#000" />
         </TouchableOpacity>
       </View>
     </View>

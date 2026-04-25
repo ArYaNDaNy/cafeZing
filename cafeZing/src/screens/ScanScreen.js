@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/theme';
 import { FadeInView, RadarRing, BouncingDot } from '../components/Animations';
 
-const BACKEND_URL = 'http://192.168.29.121:8000'; 
+const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL; 
 const CANTEEN_BEACON_ID = 'canteen_main_gate';
 
 export default function ScanScreen({ navigation }) { // Assuming you use React Navigation
@@ -72,11 +72,11 @@ export default function ScanScreen({ navigation }) { // Assuming you use React N
         const data = await response.json();
         
         // SAVE TO STATE AND HARD DRIVE
-        setTokenId(data.tokenId);
-        await AsyncStorage.setItem('@ghost_token', data.tokenId); //SAVEEE
+        setTokenId(data.token_id);
+        await AsyncStorage.setItem('@ghost_token', data.token_id); //SAVEEE
         
         setScanStatus('success');
-        startHeartbeat(data.tokenId);
+        startHeartbeat(data.token_id);
       } else {
         setScanStatus('error');
       }

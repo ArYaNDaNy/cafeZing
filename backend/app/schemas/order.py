@@ -7,13 +7,14 @@ class OrderItem(BaseModel):
     modifications: Optional[str] = None # e.g., "Extra Chutney"
 
 class OrderCreate(BaseModel):
-    token_id: str = Field(..., description="The Ghost Token from the scan")
+    ghost_token: str = Field(..., description="The Ghost Token from the BLE scan")
     items: List[OrderItem]
     payment_method: str = Field(default="UPI")
     parent_order_id: Optional[str] = Field(None, description="For the dessert reorder facility")
 
 class OrderResponse(BaseModel):
     order_id: str
+    daily_token_number: int = Field(..., description="The human-readable number, e.g., 42") # <-- NEW
     status: str
     queue_position: int
     estimated_time_mins: int
