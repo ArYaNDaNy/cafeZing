@@ -1,41 +1,52 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { ChefHat, CheckCircle2, Clock, Flame } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { ChefHat, CheckCircle2, Clock, Flame, Check } from 'lucide-react-native';
 
-// Mock data so you can see the UI before connecting the backend
-const MOCK_ORDERS = [
-  {
-    id: "8492",
-    time: "10:42 AM",
-    status: "pending", 
-    items: [
-      { name: "Classic Vada Pav", qty: 2, note: "Extra spicy" },
-      { name: "Cold Coffee", qty: 1, note: "Less sugar" }
-    ]
-  },
-  {
-    id: "8493",
-    time: "10:45 AM",
-    status: "cooking",
-    items: [
-      { name: "Masala Dosa", qty: 1, note: "" },
-      { name: "Filter Coffee", qty: 2, note: "" }
-    ]
-  }
-];
+const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL; 
 
 export default function KitchenScreen() {
-  const [orders, setOrders] = useState(MOCK_ORDERS);
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Simulating state changes
-  const handleStartCooking = (orderId) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: 'cooking' } : order
-    ));
+  const fetchActiveOrders = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/orders/kitchen/active`);
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data);
+      }
+    } catch (error) {
+      console.error("KDS Fetch Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleMarkReady = (orderId) => {
-    setOrders(orders.filter(order => order.id !== orderId));
+  useEffect(() => {
+    fetchActiveOrders(); 
+
+    const interval = setInterval(fetchActiveOrders, 10000); 
+    return () => clearInterval(interval);
+  }, []);
+
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    if (newStatus === 'COMPLETED') {
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    } else {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    }
+
+    try {
+      await fetch(`${BACKEND_URL}/api/orders/${orderId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+    } catch (error) {
+      console.error("Failed to update status", error);
+      fetchActiveOrders(); 
+    }
   };
 
   return (
@@ -56,7 +67,6 @@ export default function KitchenScreen() {
             <Text style={styles.adminTitle}>Active{'\n'}Orders</Text>
           </View>
 
-          {/* ACTIVE TICKETS */}
           <View style={styles.kitchenGrid}>
             {orders.length === 0 ? (
               <View style={styles.emptyKitchenState}>
@@ -73,7 +83,7 @@ export default function KitchenScreen() {
                     order.status === 'cooking' && styles.kitchenCardActive
                   ]}
                 >
-                  {/* TICKET HEADER */}
+
                   <View style={styles.kitchenCardHeader}>
                     <View>
                       <Text style={styles.kitchenOrderLabel}>ORDER NO.</Text>
@@ -85,7 +95,6 @@ export default function KitchenScreen() {
                     </View>
                   </View>
 
-                  {/* ITEMS LIST */}
                   <View style={styles.kitchenItemList}>
                     {order.items.map((item, index) => (
                       <View key={index} style={styles.kitchenItemRow}>
@@ -100,25 +109,38 @@ export default function KitchenScreen() {
                     ))}
                   </View>
 
-                  {/* ACTION BUTTONS */}
                   <View style={styles.kitchenActionRow}>
-                    {order.status === 'pending' ? (
+                    
+                    {order.status === 'RECEIVED' && (
                       <TouchableOpacity 
                         style={styles.kitchenBtnStart} 
-                        onPress={() => handleStartCooking(order.id)}
+                        onPress={() => updateOrderStatus(order.id, 'PREPARING')}
                       >
                         <Flame size={20} color="#000" />
                         <Text style={styles.kitchenBtnTextDark}>Start Cooking</Text>
                       </TouchableOpacity>
-                    ) : (
+                    )}
+
+                    {order.status === 'PREPARING' && (
                       <TouchableOpacity 
                         style={styles.kitchenBtnReady} 
-                        onPress={() => handleMarkReady(order.id)}
+                        onPress={() => updateOrderStatus(order.id, 'READY')}
                       >
                         <CheckCircle2 size={20} color="#000" />
-                        <Text style={styles.kitchenBtnTextDark}>Order Ready</Text>
+                        <Text style={styles.kitchenBtnTextDark}>Mark Ready</Text>
                       </TouchableOpacity>
                     )}
+
+                    {order.status === 'READY' && (
+                      <TouchableOpacity 
+                        style={[styles.kitchenBtnReady, { backgroundColor: '#1a1c1c', borderWidth: 1, borderColor: '#39ff14' }]} 
+                        onPress={() => updateOrderStatus(order.id, 'COMPLETED')}
+                      >
+                        <Check size={20} color="#39ff14" />
+                        <Text style={[styles.kitchenBtnTextDark, { color: '#39ff14' }]}>Hand to Customer</Text>
+                      </TouchableOpacity>
+                    )}
+
                   </View>
                 </View>
               ))

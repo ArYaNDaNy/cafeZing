@@ -114,6 +114,28 @@ export default function MenuScreen({setCurrentScreen}) {
     setIsPaying(true);
 
     try {
+      const existingOrder = await AsyncStorage.getItem('@active_order_id');
+      
+      if (existingOrder) {
+        Alert.alert(
+          "Order in Progress", 
+          "You already have an active order! Please pick it up before placing a new one.",
+          [
+            { 
+              text: "Go to Live Queue", 
+              onPress: () => {
+                closeModal(); 
+                setCurrentScreen('waitlist');
+              }
+            },
+            {
+              text: "Cancel",
+              style: "cancel"
+            }
+          ]
+        );
+        return; // CRITICAL: This stops the actual payment from firing!
+      }
       let ghostToken = await AsyncStorage.getItem('@ghost_token');
       
       if (!ghostToken) {

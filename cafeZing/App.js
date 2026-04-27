@@ -37,7 +37,7 @@ export default function App() {
           <View style={styles.mainContent}>
             {currentScreen === 'scan' && <ScanScreen />}
             {currentScreen === 'menu' && <MenuScreen setCurrentScreen={setCurrentScreen}/>}
-            {currentScreen === 'waitlist' && <WaitlistScreen />}
+            {currentScreen === 'waitlist' && <WaitlistScreen setCurrentScreen={setCurrentScreen}/>}
             {currentScreen === 'admin' && <AdminScreen />}
             {/* --- ADDED: Kitchen rendering logic --- */}
             {currentScreen === 'kitchen' && <KitchenScreen />}

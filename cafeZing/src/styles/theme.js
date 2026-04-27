@@ -126,7 +126,7 @@ export const styles = StyleSheet.create({
   addToTrayBtn: { backgroundColor: '#fff', paddingVertical: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   addToTrayText: { color: '#000', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
   // Replaces checkoutFabContainer and checkoutFab
-  checkoutFabContainer: { position: 'absolute', bottom: 24, alignSelf: 'center', zIndex: 50 },
+  checkoutFabContainer: { position: 'absolute', bottom: 108, alignSelf: 'center', zIndex: 50 },
   checkoutFab: { backgroundColor: '#1a1c1c', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 32, flexDirection: 'row', alignItems: 'center', gap: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 15, borderWidth: 1, borderColor: '#39ff14' },
   checkoutFabLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   checkoutText: { color: '#fff', fontWeight: '900', textTransform: 'uppercase', fontSize: 14, letterSpacing: 1 },
