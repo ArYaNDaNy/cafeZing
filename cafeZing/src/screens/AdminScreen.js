@@ -93,15 +93,31 @@ export default function AdminScreen() {
       final_price: priceType === 'ai' ? item.ai_recommended_price : item.price
     }));
 
-    setExtractedItems([]);
+    setExtractedItems([]); // Clear staging area
 
     try {
-      await fetch(API_BATCH_APPROVE_URL, {
+      const response = await fetch(API_BATCH_APPROVE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formattedItems),
       });
-      Alert.alert("Success", `Pushed ${formattedItems.length} items to database!`);
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // --- NEW: Check if any images were missing! ---
+        if (data.missing_images && data.missing_images.length > 0) {
+          Alert.alert(
+            "Partial Success", 
+            `Saved to database! However, Unsplash images were not found for:\n\n${data.missing_images.join(', ')}\n\nThey have been saved with 'null'.`
+          );
+        } else {
+          Alert.alert("Success", `Pushed ${formattedItems.length} items to database!`);
+        }
+      } else {
+        Alert.alert("Error", "Failed to push to database.");
+      }
+      
     } catch (e) {
       console.error("Batch Approve Error", e);
     }
@@ -188,6 +204,44 @@ export default function AdminScreen() {
     }
   };
 
+  // --- NEW: INDIVIDUAL ITEM IMAGE HANDLERS ---
+  
+  const handlePickItemImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1], // Square images look best for food
+      quality: 0.7,
+      base64: true,
+    });
+
+    if (!result.canceled) {
+      setItemToApprove(prev => ({ 
+        ...prev, 
+        image_url: `data:image/jpeg;base64,${result.assets[0].base64}` 
+      }));
+    }
+  };
+
+  const handleTakeItemPhoto = async () => {
+    const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+    if (!granted) return Alert.alert("Error", "Camera permission required");
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+      base64: true,
+    });
+
+    if (!result.canceled) {
+      setItemToApprove(prev => ({ 
+        ...prev, 
+        image_url: `data:image/jpeg;base64,${result.assets[0].base64}` 
+      }));
+    }
+  };
+
   const totalItems = extractedItems.length;
 
   // --- CAMERA UI ---
@@ -254,8 +308,29 @@ export default function AdminScreen() {
             </View>
             
             {itemToApprove && (
-              <>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* --- NEW: IMAGE PREVIEW & PICKER --- */}
+                <View style={styles.itemImageContainer}>
+                  {itemToApprove.image_url ? (
+                    <RNImage source={{ uri: itemToApprove.image_url }} style={styles.itemImagePreview} />
+                  ) : (
+                    <View style={styles.itemImagePlaceholder}>
+                      <ImageIcon size={32} color="#4b5563" />
+                      <Text style={styles.placeholderText}>Auto-fetching from Unsplash...</Text>
+                    </View>
+                  )}
+                  <View style={styles.imagePickerOverlay}>
+                    <TouchableOpacity style={styles.miniPickerBtn} onPress={handleTakeItemPhoto}>
+                      <Camera size={16} color="#000" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.miniPickerBtn} onPress={handlePickItemImage}>
+                      <ImageIcon size={16} color="#000" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 <Text style={styles.reviewItemName}>{itemToApprove.name}</Text>
+                
                 <View style={styles.quickSelectRow}>
                   <TouchableOpacity style={styles.quickSelectBtn} onPress={() => setCustomPrice(itemToApprove.price.toString())}>
                     <Text style={styles.quickSelectLabel}>Original</Text>
@@ -266,13 +341,15 @@ export default function AdminScreen() {
                     <Text style={[styles.quickSelectPrice, {color: '#000'}]}>₹{itemToApprove.ai_recommended_price}</Text>
                   </TouchableOpacity>
                 </View>
+
                 <Text style={styles.inputLabel}>Final Price Override</Text>
-                <TextInput style={styles.priceInput} value={customPrice} onChangeText={setCustomPrice} keyboardType="numeric" placeholder="Enter custom price" placeholderTextColor="#6b7280" />
+                <TextInput style={styles.priceInput} value={customPrice} onChangeText={setCustomPrice} keyboardType="numeric" placeholder="0.00" placeholderTextColor="#6b7280" />
+                
                 <TouchableOpacity style={styles.confirmPushBtn} onPress={confirmIndividualApprove}>
                   <Save size={20} color="#000" style={{marginRight: 8}} />
                   <Text style={styles.confirmPushText}>Push to Database</Text>
                 </TouchableOpacity>
-              </>
+              </ScrollView>
             )}
           </View>
         </View>
@@ -401,7 +478,7 @@ function InventoryRow({ name, price, rec, cat, onApprove }) {
 
 // --- STYLESHEET ---
 const styles = StyleSheet.create({
-  screenWrapper: { paddingHorizontal: 16, alignSelf: 'center', width: '100%', maxWidth: 512, flex: 1 },
+  screenWrapper: { paddingHorizontal: 16, alignSelf: 'center', width: '100%', maxWidth: 512, flex: 1,height: '100%' },
   scrollContent: { paddingBottom: 48, paddingTop: 20 },
   adminHeaderSection: { marginBottom: 32 },
   adminSubtitle: { fontSize: 10, fontWeight: '900', letterSpacing: 3.2, textTransform: 'uppercase', color: '#39ff14', marginBottom: 8 },
@@ -489,5 +566,50 @@ const styles = StyleSheet.create({
   previewBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12 },
   previewBtnText: { color: '#fff', fontWeight: '700' },
   finishBtn: { backgroundColor: '#39ff14' },
-  finishBtnText: { color: '#000', fontWeight: '900' }
+  finishBtnText: { color: '#000', fontWeight: '900' },
+  // Add these to your styles object
+  itemImageContainer: {
+    width: '100%',
+    height: 180,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 20,
+    marginBottom: 20,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  itemImagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  itemImagePlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: '#4b5563',
+    fontSize: 10,
+    marginTop: 8,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  imagePickerOverlay: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  miniPickerBtn: {
+    backgroundColor: '#39ff14',
+    padding: 10,
+    borderRadius: 12,
+    elevation: 5,
+    shadowColor: '#39ff14',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  }
 });

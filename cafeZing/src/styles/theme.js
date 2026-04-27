@@ -2,12 +2,12 @@ import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   appContainer: { flex: 1, backgroundColor: '#f9f9f9' },
-  appHeader: { height: 64, backgroundColor: '#f9f9f9', borderBottomWidth: 1, borderBottomColor: '#f3f4f6', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, zIndex: 50 },
+  appHeader: { height: 64, backgroundColor: '#f9f9f9', borderBottomWidth: 1, borderBottomColor: '#f3f6f4', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, zIndex: 50 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   appTitle: { fontSize: 20, fontWeight: '900', letterSpacing: -1, textTransform: 'uppercase', color: '#1a1c1c' },
   profileContainer: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(57, 255, 20, 0.2)', borderWidth: 2, borderColor: '#39ff14', overflow: 'hidden' },
   profileImg: { width: '100%', height: '100%' },
-  mainContent: { paddingBottom: 96, flex: 1 },
+  mainContent: { paddingBottom: 2, flex: 1 },
   bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#1a1c1c', height: 80, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 16, zIndex: 50, shadowColor: '#39ff14', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.15, shadowRadius: 40, elevation: 20 },
   navBtn: { alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 12 },
   navBtnActive: { backgroundColor: '#2f3131' },

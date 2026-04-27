@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
-// Use the new package for safe areas
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { Menu as MenuIcon, QrCode, UtensilsCrossed, Hourglass, LayoutDashboard } from 'lucide-react-native';
+// --- ADDED: ChefHat icon for the kitchen nav button ---
+import { Menu as MenuIcon, QrCode, UtensilsCrossed, Hourglass, LayoutDashboard, ChefHat } from 'lucide-react-native';
 
-// Import Theme & UI Components
 import { styles } from './src/styles/theme';
 import { NavButton } from './src/components/UIComponents';
 
-// Import Screens
 import ScanScreen from './src/screens/ScanScreen';
 import MenuScreen from './src/screens/MenuScreen';
 import WaitlistScreen from './src/screens/WaitlistScreen';
 import AdminScreen from './src/screens/AdminScreen';
+// --- ADDED: KitchenScreen import ---
+import KitchenScreen from './src/screens/KitchenScreen'; 
 import { CartProvider } from './src/context/CartContext';
 
 export default function App() {
@@ -39,6 +39,8 @@ export default function App() {
             {currentScreen === 'menu' && <MenuScreen setCurrentScreen={setCurrentScreen}/>}
             {currentScreen === 'waitlist' && <WaitlistScreen />}
             {currentScreen === 'admin' && <AdminScreen />}
+            {/* --- ADDED: Kitchen rendering logic --- */}
+            {currentScreen === 'kitchen' && <KitchenScreen />}
           </View>
 
           <View style={styles.bottomNav}>
@@ -65,6 +67,13 @@ export default function App() {
               onClick={() => setCurrentScreen('admin')} 
               icon={<LayoutDashboard size={24} color={currentScreen === 'admin' ? '#39ff14' : 'rgba(255,255,255,0.6)'} />} 
               label="Admin" 
+            />
+            {/* --- ADDED: Kitchen Nav Button --- */}
+            <NavButton 
+              active={currentScreen === 'kitchen'} 
+              onClick={() => setCurrentScreen('kitchen')} 
+              icon={<ChefHat size={24} color={currentScreen === 'kitchen' ? '#39ff14' : 'rgba(255,255,255,0.6)'} />} 
+              label="Kitchen" 
             />
           </View>
         </SafeAreaView>

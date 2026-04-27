@@ -33,11 +33,13 @@ def extract_and_save_menu(image_base64: str):
     {raw_text}
     
     CRITICAL RULES:
-    1. Keys must be EXACTLY: "name", "price", "ai_recommended_price", "category".
+    1. Keys must be EXACTLY: "name", "price", "ai_recommended_price", "category", "description", "confidence_score".
     2. NEVER output null. If a value is missing, use 0.0.
     3. IGNORE category headers (like "Rice With Gravy Half Full"). Only extract actual food items that have a numeric price.
     4. If there are two prices (Half and Full), ONLY use the Full (higher) price for the 'price' field.
     5. YOU MUST calculate 'ai_recommended_price' for EVERY item by applying a 10% discount to the price. Do not leave any blank.
+    6. Generate a 'description': For every item, write a short, appetizing 1-sentence description of the dish based on its name (e.g., "A spicy, flavorful Indo-Chinese fried rice dish.").
+    7. Generate a 'confidence_score': Set this to a float like 0.95 or 0.98 for all items.
     """
     
     print("🚀 Sending text to Groq for strict JSON structuring...")

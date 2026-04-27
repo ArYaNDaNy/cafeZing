@@ -16,6 +16,8 @@ class ExtractedMenuItem(BaseModel):
     ai_recommended_price: float = Field(..., description="AI's smart suggestion based on Mumbai college rates")
     category: str
     confidence_score: float
+   # --- THE FIX: Make this Optional so FastAPI doesn't panic if Groq misses it! ---
+    description: Optional[str] = Field(None, description="Write a short, appetizing 1-sentence description.")
     image_url: Optional[str] = Field(None, description="Fetched automatically from Unsplash API")
 
 class OCRResponse(BaseModel):
