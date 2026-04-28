@@ -1,6 +1,7 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import scan,heartbeat,menu,order
+from app.api import scan,heartbeat,menu,order,payments
 
 app = FastAPI(title="Canteen Live API", version="1.0.0")
 
@@ -17,6 +18,7 @@ app.include_router(scan.router)
 app.include_router(heartbeat.router)
 app.include_router(menu.router)
 app.include_router(order.router)
+app.include_router(payments.router)
 
 
 @app.get("/")
