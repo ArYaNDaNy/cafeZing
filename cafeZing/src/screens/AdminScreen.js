@@ -35,7 +35,10 @@ export default function AdminScreen() {
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true' // ADD HERE TOO
+  },
         body: JSON.stringify({ images_base64: base64Array }),
       });
 
@@ -77,7 +80,10 @@ export default function AdminScreen() {
     try {
       await fetch(API_BATCH_APPROVE_URL, {  // <--- CHANGED TO BATCH URL
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true' // ADD HERE TOO
+  },
         body: JSON.stringify([finalItem]),  // <--- WRAPPED IN ARRAY BRACKETS
       });
     } catch (e) {

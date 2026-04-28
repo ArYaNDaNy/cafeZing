@@ -2,9 +2,32 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class OrderItem(BaseModel):
-    item_id: str = Field(..., description="The unique ID of the food item")
-    quantity: int = Field(default=1, gt=0, description="Must order at least 1")
-    modifications: Optional[str] = None # e.g., "Extra Chutney"
+    item_id: str
+    quantity: int
+    modifications: Optional[str] = None
+
+class CreateRzpOrderRequest(BaseModel):
+    amount: float # Total Rupees
+    ghost_token: str
+    items: List[OrderItem] # To validate stock before accepting money
+
+class CreateRzpOrderResponse(BaseModel):
+    razorpay_order_id: str
+    amount_paise: int
+    internal_temp_order_id: str
+
+class VerifyPaymentRequest(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+    ghost_token: str
+    cart_total: float
+    items: List[OrderItem] # Items to finally save to DB
+
+class FinalOrderResponse(BaseModel):
+    status: str
+    order_id: str
+    daily_token_number: int
 
 class OrderCreate(BaseModel):
     ghost_token: str = Field(..., description="The Ghost Token from the BLE scan")

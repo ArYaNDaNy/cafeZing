@@ -1,6 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, FlatList, ScrollView, Modal, Animated, Dimensions, StyleSheet } from 'react-native';
-import { MapPin, Zap, ChevronRight, X , Minus, Plus} from 'lucide-react-native';
+// ADDED: ChefHat icon to reuse app theme language
+import { MapPin, X , Minus, Plus, ChefHat} from 'lucide-react-native';
+// ADDED: Razorpay SDK
+import RazorpayCheckout from 'react-native-razorpay';
+
 import { styles } from '../styles/theme';
 import { FadeInView } from '../components/Animations';
 import { FoodCard } from '../components/UIComponents';
@@ -8,6 +12,9 @@ import { useCart } from '../context/CartContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.29.121:8000'; 
+// ADDED: Load Razorpay Key
+const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
+
 const CATEGORIES = ['All', 'Fast Selling', 'Snacks', 'Beverages', 'Combos'];
 
 export default function MenuScreen({setCurrentScreen}) {
@@ -20,23 +27,6 @@ export default function MenuScreen({setCurrentScreen}) {
   const { cart, addToTray, updateQuantity, cartTotal } = useCart();
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (cart.length > 0) {
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.1, 
-          duration: 100, 
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 3,
-          tension: 40,
-          useNativeDriver: true,
-        })
-      ]).start();
-    }
-  }, [cartTotal]);
 
   useEffect(() => {
     fetchMenu();
@@ -45,42 +35,25 @@ export default function MenuScreen({setCurrentScreen}) {
   const { height } = Dimensions.get('window');
   const slideAnim = useRef(new Animated.Value(height)).current;
 
+  // Optimized FAB animation
   useEffect(() => {
     if (cart.length > 0) {
       scaleAnim.setValue(1); 
-      
       Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.05,
-          duration: 150, 
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 6,
-          tension: 40, 
-          useNativeDriver: true,
-        })
+        Animated.timing(scaleAnim, { toValue: 1.05, duration: 150, useNativeDriver: true }),
+        Animated.spring(scaleAnim, { toValue: 1, friction: 6, tension: 40, useNativeDriver: true })
       ]).start();
     }
   }, [cartTotal]);
   
   const openModal = () => {
     setIsModalVisible(true);
-    Animated.spring(slideAnim, {
-      toValue: 0, 
-      friction: 100,
-      tension: 30,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(slideAnim, { toValue: 0, friction: 100, tension: 30, useNativeDriver: true }).start();
   };
 
   const closeModal = () => {
-    Animated.timing(slideAnim, {
-      toValue: height,
-      duration: 950,
-      useNativeDriver: true,
-    }).start(() => setIsModalVisible(false)); 
+    Animated.timing(slideAnim, { toValue: height, duration: 950, useNativeDriver: true })
+      .start(() => setIsModalVisible(false)); 
   };
 
   useEffect(() => {
@@ -109,63 +82,119 @@ export default function MenuScreen({setCurrentScreen}) {
     return item.category === activeCategory;
   });
 
+  // ==========================================
+  // RAZORPAY INTEGRATION LOGIC
+  // ==========================================
   const handlePayment = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !RAZORPAY_KEY_ID) return;
     setIsPaying(true);
 
     try {
+      // 1. Validate Ghost Token (Already exist in your code)
       let ghostToken = await AsyncStorage.getItem('@ghost_token');
-      
       if (!ghostToken) {
-        Alert.alert(
-          "Invalid Session", 
-          "You must be inside the canteen to order. Please scan the beacon/QR code again."
-        );
+        Alert.alert("Invalid Session", "You must be inside the canteen to order.");
         setIsPaying(false);
         return; 
       }
 
+      // Format items for backend payload
       const orderItems = cart.map(item => ({
         item_id: item.item_id.toString(), 
         quantity: item.qty,
         modifications: null 
       }));
 
-      const payload = {
-        ghost_token: ghostToken,
-        items: orderItems,
-        payment_method: "UPI", 
-        parent_order_id: null
-      };
-
-      const response = await fetch(`${BACKEND_URL}/api/orders/place`, {
+      // --- STEP 1: CREATE RAZORPAY ORDER ON BACKEND ---
+      // We send the amount and items to FastAPI, which asks Razorpay for an Order ID.
+      const startOrderResponse = await fetch(`${BACKEND_URL}/api/payments/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          amount: cartTotal, // Send total Rupees
+          ghost_token: ghostToken,
+          items: orderItems,
+        })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Server error: ${response.status}`);
+      if (!startOrderResponse.ok) {
+        const errorData = await startOrderResponse.json();
+        throw new Error(errorData.detail || "Could not initiate payment.");
       }
 
-      const orderData = await response.json();
+      // Data needed for SDK: rzp_order_id, amount_in_paise
+      const razorpayOrderData = await startOrderResponse.json();
 
-      await AsyncStorage.setItem('@active_order_id', orderData.order_id);
-      await AsyncStorage.setItem('@active_token_number', orderData.daily_token_number.toString());
+      // --- STEP 2: OPEN RAZORPAY SDK NATIVE OVERLAY ---
+      const options = {
+        description: 'Canteen Food Order',
+        image: 'https://picsum.photos/seed/cafezing/200/200', // Use your logo URL
+        currency: 'INR',
+        key: RAZORPAY_KEY_ID, 
+        amount: razorpayOrderData.amount_paise.toString(), // Razorpay expects amount in Paise
+        name: 'Cafe Zing Canteen',
+        order_id: razorpayOrderData.razorpay_order_id, // Important for automatic verification
+        prefill: {
+          email: 'student@college.edu', // Optionally use user data
+          contact: '9999999999',
+          name: 'Canteen Student'
+        },
+        theme: { color: '#1a1c1c' } // Matches app background
+      };
 
+      // Triggers GPay/PhonePe/Paytm intent flow
+      const paymentSuccessData = await RazorpayCheckout.open(options);
+
+      // If we reach here, payment was successful in the Razorpay UI.
+      // paymentSuccessData contains: razorpay_payment_id, razorpay_order_id, razorpay_signature
+
+      // --- STEP 3: VERIFY PAYMENT ON BACKEND ---
+      // CRITICAL SECURITY STEP: Validate signature to prevent fraud.
+      const verifyResponse = await fetch(`${BACKEND_URL}/api/payments/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...paymentSuccessData, // Send all Razorpay success IDs
+          ghost_token: ghostToken,
+          cart_total: cartTotal,
+          items: orderItems // Resend items to actually create the DB order now
+        })
+      });
+
+      if (!verifyResponse.ok) {
+        const errorData = await verifyResponse.json();
+        throw new Error(errorData.detail || "Payment verification failed.");
+      }
+
+      // Final order data from your DB (contains final token number)
+      const finalOrderData = await verifyResponse.json();
+
+      // Success flow (Existing logic)
+      await AsyncStorage.setItem('@active_order_id', finalOrderData.order_id);
+      await AsyncStorage.setItem('@active_token_number', finalOrderData.daily_token_number.toString());
+
+      // Clear Cart efficiently
       cart.forEach(item => updateQuantity(item.item_id, -item.qty)); 
       closeModal(); 
 
+      // Redirect to KDS Waitlist
       setCurrentScreen('waitlist');
 
     } catch (error) {
       console.error("Payment API Error:", error);
-      Alert.alert("Order Failed", error.message || "Could not reach the server.");
+      
+      // Razorpay specific error handling (e.g., user cancelled)
+      if (error.code) {
+        console.log(`RZP Error ${error.code}: ${error.description}`);
+        Alert.alert("Payment Cancelled/Failed", error.description);
+      } else {
+        Alert.alert("Order Failed", error.message || "Could not reach the server.");
+      }
     } finally {
       setIsPaying(false);
     }
   };
+  // ==========================================
 
   const renderListHeader = () => (
     <View style={styles.menuHeaderContainer}>
@@ -234,18 +263,12 @@ export default function MenuScreen({setCurrentScreen}) {
       <Modal visible={isModalVisible} transparent={true} animationType="none" onRequestClose={closeModal}>
         <View style={styles.modalOverlay}>
           
-          {/* This invisible button lets users tap the dark background to close the tray */}
-          <TouchableOpacity 
-            style={StyleSheet.absoluteFill} 
-            onPress={closeModal} 
-            activeOpacity={1} 
-          />
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeModal} activeOpacity={1} />
 
           <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
             
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Your Tray</Text>
-              {/* Update the X button to use closeModal */}
               <TouchableOpacity onPress={closeModal}>
                 <X size={24} color="#1a1c1c" />
               </TouchableOpacity>
@@ -280,8 +303,13 @@ export default function MenuScreen({setCurrentScreen}) {
             <TouchableOpacity 
               style={[styles.payButton, isPaying && { backgroundColor: '#9ca3af' }]} 
               onPress={handlePayment}
-              disabled={isPaying} // Prevent double-clicks
+              disabled={isPaying} 
             >
+              {isPaying ? (
+                <ActivityIndicator color="#000" style={{marginRight: 8}} />
+              ) : (
+                <ChefHat size={18} color="#000" style={{marginRight: 8}} />
+              )}
               <Text style={styles.payButtonText}>
                 {isPaying ? "PROCESSING..." : `PAY ₹${cartTotal.toFixed(2)}`}
               </Text>

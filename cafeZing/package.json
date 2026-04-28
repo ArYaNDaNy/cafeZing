@@ -11,6 +11,7 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "^55.0.12",
+    "expo-build-properties": "~55.0.13",
     "expo-camera": "~55.0.15",
     "expo-file-system": "~55.0.17",
     "expo-image-picker": "~55.0.18",
@@ -21,6 +22,7 @@
     "motion": "^12.38.0",
     "react": "19.2.0",
     "react-native": "0.83.4",
+    "react-native-razorpay": "^3.0.0",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-svg": "15.15.3"
   },
