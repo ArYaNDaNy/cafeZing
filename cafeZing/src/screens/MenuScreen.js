@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, FlatList, ScrollView, Modal, Animated, Dimensions, StyleSheet } from 'react-native';
-// ADDED: ChefHat icon to reuse app theme language
 import { MapPin, X , Minus, Plus, ChefHat} from 'lucide-react-native';
-// ADDED: Razorpay SDK
 import RazorpayCheckout from 'react-native-razorpay';
 
 import { styles } from '../styles/theme';
@@ -12,7 +10,6 @@ import { useCart } from '../context/CartContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.29.121:8000'; 
-// ADDED: Load Razorpay Key
 const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
 
 const CATEGORIES = ['All', 'Fast Selling', 'Snacks', 'Beverages', 'Combos'];

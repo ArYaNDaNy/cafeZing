@@ -51,13 +51,6 @@ export default function KitchenScreen() {
 
   return (
     <View style={styles.appContainer}>
-      {/* HEADER */}
-      <View style={styles.appHeader}>
-        <View style={styles.headerLeft}>
-          <ChefHat color="#1a1c1c" size={24} />
-          <Text style={styles.appTitle}>Kitchen Line</Text>
-        </View>
-      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.screenWrapper}>
