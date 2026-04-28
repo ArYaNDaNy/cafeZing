@@ -4,9 +4,12 @@ import { Zap, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/theme';
 import { FadeInView, RadarRing, BouncingDot } from '../components/Animations';
+import { PermissionsAndroid, Platform } from 'react-native';
+import { BleManager } from 'react-native-ble-plx';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL; 
 const CANTEEN_BEACON_ID = 'canteen_main_gate';
+const bleManager = new BleManager();
 
 export default function ScanScreen({ navigation }) { // Assuming you use React Navigation
   const [scanStatus, setScanStatus] = useState('scanning'); // 'scanning', 'success', 'error'
@@ -59,31 +62,58 @@ export default function ScanScreen({ navigation }) { // Assuming you use React N
   const performScan = async () => {
     setScanStatus('scanning');
     
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Radar animation delay
-
-      const response = await fetch(`${BACKEND_URL}/api/scan/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ beacon_id: CANTEEN_BEACON_ID }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // SAVE TO STATE AND HARD DRIVE
-        setTokenId(data.token_id);
-        await AsyncStorage.setItem('@ghost_token', data.token_id); //SAVEEE
-        
-        setScanStatus('success');
-        startHeartbeat(data.token_id);
-      } else {
-        setScanStatus('error');
-      }
-    } catch (error) {
-      console.error("Network Error:", error);
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) {
+      Alert.alert("Permission Denied", "Bluetooth and Location are required.");
       setScanStatus('error');
+      return;
     }
+
+    // 1. Start listening to the physical Bluetooth radio
+    bleManager.startDeviceScan(null, null, async (error, device) => {
+      if (error) {
+        console.error("BLE Error:", error);
+        setScanStatus('error');
+        return;
+      }
+
+      // 2. 🔍 LOOK FOR THE PHYSICAL BEACON
+      if (device && device.name === 'CANTEEN_BEACON') {
+        
+        bleManager.stopDeviceScan(); // Found it! Turn off radio to save battery.
+        
+        try {
+          // 3. CALL YOUR BACKEND TO GET THE OFFICIAL REDIS TOKEN
+          const response = await fetch(`${BACKEND_URL}/api/scan/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ beacon_id: CANTEEN_BEACON_ID }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            
+            // 4. SAVE THE OFFICIAL TOKEN
+            setTokenId(data.token_id);
+            await AsyncStorage.setItem('@ghost_token', data.token_id); 
+            
+            setScanStatus('success');
+            startHeartbeat(data.token_id); // Start the Redis keep-alive ping!
+          } else {
+            setScanStatus('error');
+          }
+        } catch (networkError) {
+          console.error("Backend Error:", networkError);
+          setScanStatus('error');
+        }
+      }
+    });
+
+    // Auto-fail if the beacon isn't found within 10 seconds
+    setTimeout(() => {
+      bleManager.stopDeviceScan();
+      setScanStatus(prev => prev === 'scanning' ? 'error' : prev);
+    }, 10000);
   };
 
   // 4. THE HEARTBEAT LOGIC
@@ -143,6 +173,23 @@ export default function ScanScreen({ navigation }) { // Assuming you use React N
       <View style={[styles.corner, styles.bottomRight]} />
     </View>
   );
+
+  // permissions
+  const requestPermissions = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+      ]);
+      return (
+        granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted['android.permission.BLUETOOTH_CONNECT'] === PermissionsAndroid.RESULTS.GRANTED
+      );
+    }
+    return true; 
+  };
 
   return (
     <FadeInView slideY={20} style={styles.scanScreen}>
