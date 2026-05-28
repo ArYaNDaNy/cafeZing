@@ -9,11 +9,11 @@ Cafe Zing was built to solve the problem of overwhelming lunch-hour traffic by o
 
 * **Backend:** FastAPI (Python)
 * **Queue Management:** Redis
-* **Data Processing:** PaddleOCR 
+* **Data Processing:** Tesseract  
 
 ## ✨ Core Features
 * **Distributed Task Queues:** Implemented Redis to handle asynchronous order processing, ensuring the system remains responsive during peak load.
-* **Automated Menu Digitization:** Integrated PaddleOCR to scan physical canteen menus and automatically convert them into structured database entries.
+* **Automated Menu Digitization:** Integrated Tesseract to scan physical canteen menus and automatically convert them into structured database entries.
 * **Real-Time Order Tracking:** Managed state across the application to give users instant feedback on their order status.
 
 ## 🚀 How to Run Locally
