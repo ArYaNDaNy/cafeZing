@@ -2,7 +2,6 @@
 
 > A high-concurrency canteen management system utilizing distributed task queues and Optical Character Recognition (OCR) to handle peak load ordering.
 
-**[Insert a GIF of the app running, or a screenshot of the terminal processing the Redis queue here]**
 
 ## 🏗️ System Architecture
 Cafe Zing was built to solve the problem of overwhelming lunch-hour traffic by offloading order processing to a background queue, preventing the main server from crashing.
