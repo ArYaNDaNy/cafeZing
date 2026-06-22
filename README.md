@@ -18,7 +18,7 @@ Cafe Zing was built to solve the problem of overwhelming lunch-hour traffic by o
 ## 🚀 How to Run Locally
 
 1. Clone the repository:
-   `git clone https://github.com/JishnuNair2005/cafe-zing.git`
+   `git clone https://github.com/JishnuNair2005/cafe-zing.git` 
 2. Install dependencies:
    `pip install -r requirements.txt`
 3. Ensure Redis is running locally:
